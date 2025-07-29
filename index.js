@@ -1,16 +1,25 @@
 
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client } = require('whatsapp-web.js');
+require('dotenv').config();
+const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const { google } = require('googleapis');
 
 // Inisialisasi WhatsApp client
+let sessionData = null;
+const SESSION_FILE_PATH = './session.json';
+if (fs.existsSync(SESSION_FILE_PATH)) {
+    sessionData = JSON.parse(fs.readFileSync(SESSION_FILE_PATH, 'utf-8'));
+}
+
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    session: sessionData,
     puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
 });
+
 
 
 client.on('qr', qr => {
@@ -52,6 +61,13 @@ app.get("/", (req, res) => {
 
 
 client.initialize();
+client.on('authenticated', session => {
+    console.log('✅ Session berhasil dibuat');
+    // Simpan session ke file agar bisa dipakai ulang di cloud
+    fs.writeFileSync(SESSION_FILE_PATH, JSON.stringify(session));
+    console.log('Session disimpan ke session.json');
+});
+
 
 // Fungsi ambil data dari Google Sheets
 async function ambilDataTugas(filterMapel = '') {
